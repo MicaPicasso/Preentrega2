@@ -1,0 +1,24 @@
+*{
+    font-family: monospace;
+}
+
+#chatbox{
+    width: 100%;
+    padding: 10px 0;
+    border: 5px solid #FFD0D0;
+}
+
+.container-chatbox{
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+.messages{
+    border: 5px solid #FFD0D0;
+    height: 100vh;
+    width: 100%;
+}
+
+#messages{
+    padding: 20px;
+}

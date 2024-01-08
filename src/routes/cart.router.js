@@ -1,6 +1,7 @@
 import { Router } from "express";
 import cartDao from "../dao/db_manager/cart.dao.js";
 import ProductDao from "../dao/db_manager/products.dao.js";
+import { cartModel } from "../models/cartModel.js";
 
 const router= Router()
 
@@ -26,97 +27,146 @@ router.post("/", async(req,res)=>{
     }
 })
 
-// recibe los productos
-// router.get("/:cid", (req,res)=>{
-//     const {cid}= req.params
-//     cartManager.getProductsByCartId(Number(cid))
-//     const index= cartManager.carts.findIndex((el)=> el.id === Number(cid))
-//     if(index=== -1){
-//         res.json({status: "el carrito solicitado no existe"})
-//     }
-//     const response= cartManager.carts[index].products
-//     res.json({carrito: Number(cid), products: response})
+router.post("/:cid/products/:pid", async (req, res) => {
+    try {
+        const { pid, cid } = req.params;
 
-// })
-
-// agregar productos
-router.post("/:cid/products/:pid", async (req,res)=>{
-    try{
-        const {pid,cid}=req.params
-        
-        const cart = await cartDao.getCartById({_id:cid})
-        
-         // a veces hace el populate a veces no
-        cart.populate('products')  
-        
-        cart.products.push(pid)
-        
-        const response = await cartDao.updateCart({_id: cart._id}, cart)
-        
+        // Obtener el carrito con detalles de productos poblados
+        const cart = await cartModel.findById('658c73e0bdf4060ed384ba7e').populate('products');
+  
+        // Verificar si el producto ya está en el carrito
+        const existingProductIndex = cart.products.findIndex(product => product._id === pid);
+        console.log(existingProductIndex);
         console.log(cart);
-        res.json(response)
-       
-        // const product = await ProductDao.getProductById(pid);
+        if (existingProductIndex !== -1) {
+        // Si el producto ya está en el carrito, incrementa la cantidad
+        cart.products[existingProductIndex].quantity += 1;
+        } else {
+        // Si el producto no está en el carrito, agrégalo con una cantidad de 1
+        cart.products.push({
+          _id: pid,
+          quantity: 1
+        });
+        }
 
-        // let productFound = false;
+        // Actualizar el carrito en la base de datos
+        const response = await cartDao.updateCart({ _id: cart._id }, cart);
 
-        // cart.products.forEach(() => {
-        //     // if (cart.products._id === pid) {
-        //     //     // Si el producto ya está en el carrito, incrementa la cantidad
-        //     //     cart.products.quantity += 1;
-        //     //     productFound = true;
-        //     // }
-        //     console.log(cart.products.products);
-        // });
-        
-        // // Si el producto no está en el carrito, agrégalo con una cantidad de 1
-        // if (!productFound) {
-        //     cart.products.push({
-        //         _id: product._id,
-        //         quantity: 1
-        //     });
-        // }
-        // // para agregar quantity
-        // cart.products.forEach((pid)=>{
-            
-        //     if(id){
-        //         quantity = quantity + 1
-        //     }else{
-        //         quantity = 0
-        //     }
-        // });
-
-        // res.json({"Carrito Creado": response})
-     }catch(error){
+        // console.log(cart);
+        res.json(response);
+        } catch (error) {
         console.log(error);
 
         res.json({
             message: "error",
             error
-        })
-    }
-})
+        });
+        }
+        });
+
+
+
 
 // metodo delete
 // debe eliminar del carrito el producto seleccionado
 
+router.delete("/:cid/products/:pid", async (req, res) => {
+    try {
+        const { pid, cid } = req.params;
+
+        // Obtener el carrito con detalles de productos poblados
+        const cart = await cartModel.find({ _id: cid }).populate('products');
+
+        // Encontrar el índice del producto en el carrito
+        const productIndex = cart.products.findIndex(product => product._id === pid);
+
+        if (productIndex !== -1) {
+            // Si el producto está en el carrito, eliminarlo
+            cart.products.splice(productIndex, 1);
+
+            // Actualizar el carrito en la base de datos
+            const response = await cartDao.updateCart({ _id: cart._id }, cart);
+
+            res.json(response);
+        } else {
+            res.json({ message: "El producto no esta en el carrito" });
+        }
+    } catch (error) {
+        console.log(error);
+
+        res.json({
+            message: "error",
+            error
+        });
+    }
+});
+
+
+
+
 // metodo delete2
 // debe eliminar stodos los productos
 // tampoco debe eliminar el carrito, solo vaciarlo
+
+router.delete("/:cid", async (req, res) => {
+    try {
+        const {cid} = req.params;
+
+        const carritoVacio = {
+            title: "Carrito Vacio", 
+            products: [] 
+        };
+
+        // Actualizar el carrito en la base de datos
+        const response = await cartDao.updateCart({ _id: cid}, carritoVacio);
+
+        res.json(response);
+        
+    } catch (error) {
+        console.log(error);
+
+        res.json({
+            message: "error",
+            error
+        });
+    }
+});
+
+
 
 // put
 // debe permitir actualizar el carrito
 // debe recibir com body todo el arreglo de productos que queremos actualizar
 // recibe un array completos con todos los neuvos id y las cantidades nuevas
 
-// put2
-// el body que voy a enviar debe ser el producto como tal. actualizar solo la cantidad de ejemplares de ese producto por la cantidad que yo paso por 
-// debe poder actualizar la cantidad que corresponde a dicho producto
+router.put("/:cid", async (req, res) => {
+    try {
+        const {cid} = req.params;
+        const {pid, quantity}= req.body
+
+        const products={
+            title: 'Producto Modificado',
+            products: {pid,
+            quantity
+            }
+        }      
+        
+        const response = await cartDao.updateCart({ _id: cid}, products);
+
+        res.json(response);
+        
+    } catch (error) {
+        console.log(error);
+
+        res.json({
+            message: "error",
+            error
+        });
+    }
+});
 
 
-// prodcuts antes solo era con id de productos
-// como nuestro producto tiene id de mongo, ahora tengo que hacer una population a dichos productos.
-// osea que si yo mando a llamar el end point de carts, al momento de traer el cqarrito, debe poder trar los prodcutos desglosados.
+
 
 
 

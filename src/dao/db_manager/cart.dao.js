@@ -18,7 +18,7 @@ class CartDao {
   }
 
   async deleteProduct(id) {
-    return await productModel.findByIdAndDelete(id);
+    return await cartModel.findByIdAndDelete(id);
   }
 }
 

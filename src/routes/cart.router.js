@@ -1,7 +1,7 @@
 import { Router } from "express";
 import cartDao from "../dao/db_manager/cart.dao.js";
-import ProductDao from "../dao/db_manager/products.dao.js";
 import { cartModel } from "../models/cartModel.js";
+
 
 const router= Router()
 
@@ -32,20 +32,20 @@ router.post("/:cid/products/:pid", async (req, res) => {
         const { pid, cid } = req.params;
 
         // Obtener el carrito con detalles de productos poblados
-        const cart = await cartModel.findById('658c73e0bdf4060ed384ba7e').populate('products');
+        const cart = await cartModel.findById({_id: cid}).populate('products');
   
         // Verificar si el producto ya está en el carrito
         const existingProductIndex = cart.products.findIndex(product => product._id === pid);
         console.log(existingProductIndex);
-        console.log(cart);
+        console.log(cart.products);
         if (existingProductIndex !== -1) {
         // Si el producto ya está en el carrito, incrementa la cantidad
         cart.products[existingProductIndex].quantity += 1;
         } else {
         // Si el producto no está en el carrito, agrégalo con una cantidad de 1
         cart.products.push({
-          _id: pid,
-          quantity: 1
+         _id: pid,
+         quantity: 1
         });
         }
 
@@ -165,8 +165,19 @@ router.put("/:cid", async (req, res) => {
     }
 });
 
+router.get("/", async (req,res)=>{
+    res.render("home")
+})
 
 
+router.get("/paginate", async (req,res)=>{
+    const cart = await cartModel.paginate()
+    console.log(cart);
+
+    res.render("cart",{
+        cart
+    })
+})
 
 
 

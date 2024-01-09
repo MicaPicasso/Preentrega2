@@ -6,6 +6,7 @@ import cartRouter from "./routes/cart.router.js"
 import __dirname from "./utils.js"
 import { password, PORT, db_name } from "./env.js"
 import mongoose from "mongoose"
+import { allowInsecurePrototypeAccess } from "@handlebars/allow-prototype-access"
 
 
 // Socket Server
@@ -27,7 +28,8 @@ app.use(express.urlencoded({extended:true}))
 // Configuracion del engine
 app.engine("hbs", handlebars.engine({
     extname: "hbs",
-    defaultLayout: "home"
+    defaultLayout: "home",
+    handlebars: allowInsecurePrototypeAccess(handlebars),
 }))
     // seteo del motor
 app.set("view engine", "hbs");
